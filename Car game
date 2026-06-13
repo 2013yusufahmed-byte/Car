@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Racing Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+        }
+
+        .hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            color: white;
+            font-size: 16px;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        }
+
+        .hud-left, .hud-right {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .hud-item {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 5px;
+            backdrop-filter: blur(5px);
+        }
+
+        .speed-bar {
+            width: 200px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #4CAF50;
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .speed-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #FFC107);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .controls-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+
+        .start-screen, .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+            text-align: center;
+        }
+
+        .start-screen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #4CAF50;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        .start-screen p, .game-over-screen p {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: #aaa;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .lap-info {
+            font-size: 18px;
+            color: #FFD700;
+        }
+
+        .checkpoint-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 215, 0, 0.6);
+            border: 2px solid #FFD700;
+            margin-right: 8px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="hud">
+            <div class="hud-left">
+                <div class="hud-item">
+                    Speed: <span id="speedValue">0</span> km/h
+                    <div class="speed-bar">
+                        <div class="speed-fill" id="speedBar"></div>
+                    </div>
+                </div>
+                <div class="hud-item lap-info">
+                    Lap: <span id="lapValue">1</span>
+                </div>
+            </div>
+            <div class="hud-right">
+                <div class="hud-item">
+                    Best Time: <span id="bestTime">--:--</span>
+                </div>
+                <div class="hud-item">
+                    Current Time: <span id="currentTime">00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="startScreen" class="start-screen">
+            <h1>🏎️ CAR RACING</h1>
+            <p>Complete laps on the track to win!</p>
+            <p style="font-size: 16px; color: #888;">Press SPACE or click START to begin</p>
+            <button class="btn" onclick="startGame()">START GAME</button>
+        </div>
+
+        <div id="gameOverScreen" class="game-over-screen hidden">
+            <h1 id="gameOverTitle">🏁 RACE COMPLETE!</h1>
+            <p id="gameOverText"></p>
+            <p id="bestTimeDisplay"></p>
+            <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
+        </div>
+
+        <div class="controls-info">
+            ↑ Accelerate | ↓ Brake | ← Turn Left | → Turn Right
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
